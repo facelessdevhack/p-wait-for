@@ -7,13 +7,18 @@ const sleep = (ms, signal) => new Promise((resolve, reject) => {
 		return;
 	}
 
-	const timeout = setTimeout(resolve, ms);
+	const onAbort = () => {
+		clearTimeout(timeout);
+		reject(signal.reason);
+	};
+
+	const timeout = setTimeout(() => {
+		signal?.removeEventListener('abort', onAbort);
+		resolve();
+	}, ms);
 
 	if (signal) {
-		signal.addEventListener('abort', () => {
-			clearTimeout(timeout);
-			reject(signal.reason);
-		}, {once: true});
+		signal.addEventListener('abort', onAbort, {once: true});
 	}
 });
 

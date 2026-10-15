@@ -1,3 +1,4 @@
+import {getEventListeners} from 'node:events';
 import test from 'ava';
 import delay from 'delay';
 import timeSpan from 'time-span';
@@ -222,6 +223,24 @@ test('resolves with signal when condition becomes true', async t => {
 	});
 
 	t.true(checks >= 3);
+});
+
+test('removes sleep abort listeners when polling completes', async t => {
+	const controller = new AbortController();
+	const poll = async before => {
+		let checks = 0;
+		await pWaitFor(() => ++checks >= 4, {
+			interval: 1,
+			signal: controller.signal,
+			before,
+		});
+
+		t.is(checks, 4);
+		t.is(getEventListeners(controller.signal, 'abort').length, 0);
+	};
+
+	await poll(true);
+	await poll(false);
 });
 
 test('resolveWith works with timeout', async t => {
